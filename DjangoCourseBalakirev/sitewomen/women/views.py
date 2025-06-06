@@ -1,8 +1,10 @@
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, HttpResponsePermanentRedirect
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.template.loader import render_to_string
+
+from women.models import Women, Category
 
 # Create your views here.
 menu = [{'title': "О сайте", 'url_name': 'about'},
@@ -25,19 +27,14 @@ data_db = [
 
 ]
 
-cats_db = [
-    {'id': 1, 'name': 'Актрисы'},
-    {'id': 2, 'name': 'Певицы'},
-    {'id': 3, 'name': 'Спортсменки'},
-]
-
-
 
 def index(request):
+	posts = Women.published.all()
+
 	data = {
 		'title': 'Главная страница',
 		'menu': menu,
-		'posts': data_db,
+		'posts': posts,
 		'cat_selected': 0
 		}
 	return render(request, 'women/index.html', context=data)
@@ -46,8 +43,17 @@ def about(request):
 	return render(request, 'women/about.html',{'title': 'О сайте', 'menu': menu} )
 
 
-def show_post(request, post_id):
-	return HttpResponse(f'Показываем статью с id={post_id}')
+def show_post(request, post_slug):
+	post = get_object_or_404(Women, slug=post_slug)
+	data = {
+		'title': post.title,
+		'menu': menu,
+		'post': post,
+		'cat_selected': 1
+		}
+
+
+	return render(request, 'women/post.html', data)
 
 def addpage(request):
 	return HttpResponse('Добавление статьи')
@@ -58,12 +64,15 @@ def contact(request):
 def login(request):
 	return HttpResponse('Авторизация')
 
-def show_category(request, cat_id):
+def show_category(request, cat_slug):
+	category = get_object_or_404(Category, slug=cat_slug)
+	posts = Women.published.filter(cat_id=category.pk)
+
 	data = {
-		'title': 'Отображение по рубрикам',
+		'title': f'Рубрика: {category.name}',
 		'menu': menu,
 		'posts': data_db,
-		'cat_selected': cat_id
+		'cat_selected': category.pk
 		}
 	return render(request, 'women/index.html', context=data)
 
